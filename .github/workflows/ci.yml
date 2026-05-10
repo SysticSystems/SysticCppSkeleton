@@ -18,13 +18,13 @@ jobs:
         run: docker build -t systic-alpine -f .github/workflows/Dockerfile .
 
       - name: Run Pipeline (TESTING phase)
-        # We mount the code directory so that the artifacts created map out to the host
+        # Using --user root to ensure we can chown the workspace artifacts
         run: |
-          docker run --rm -v ${{ github.workspace }}:/workspace systic-alpine \
-            /bin/bash -c "./build.sh Testing"
+          docker run --rm --user root -v ${{ github.workspace }}:/workspace systic-alpine \
+            /bin/bash -c "chmod +x ./build.sh && ./build.sh Testing && chown -R 1001:1001 /workspace"
 
       - name: Upload Verification Pipeline Reports (Hard Truth)
-        if: always() # Upload outputs even if a test formally errors out
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: systic-transparency-reports

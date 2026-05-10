@@ -7,5 +7,5 @@ compiler.cppstd=23
 compiler.libcxx=libstdc++11
 
 [buildenv]
-CC=clang-21
-CXX=clang++-21
+CC=clang
+CXX=clang++
