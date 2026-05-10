@@ -1,0 +1,33 @@
+name: Systic Hard Truth Pipeline
+
+on:
+  push:
+    tags:
+      - "release-v*"
+
+jobs:
+  sovereign-build:
+    name: Build & Extract Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Alpine Docker Image
+        run: docker build -t systic-alpine -f .github/workflows/Dockerfile .
+
+      - name: Run Pipeline (TESTING phase)
+        # We mount the code directory so that the artifacts created map out to the host
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/workspace systic-alpine \
+            /bin/bash -c "./build.sh Testing"
+
+      - name: Upload Verification Pipeline Reports (Hard Truth)
+        if: always() # Upload outputs even if a test formally errors out
+        uses: actions/upload-artifact@v4
+        with:
+          name: systic-transparency-reports
+          path: |
+            test_results.xml
+            bench_results.json
