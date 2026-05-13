@@ -5,6 +5,9 @@ on:
     tags:
       - "release-v*"
 
+permissions:
+  contents: write
+
 jobs:
   sovereign-build:
     name: Build & Extract Artifacts
@@ -18,12 +21,12 @@ jobs:
         run: docker build -t systic-alpine -f .github/workflows/Dockerfile .
 
       - name: Run Pipeline (TESTING phase)
-        # Using --user root to ensure we can chown the workspace artifacts
+        # 1001:1001 is the default ID for the GitHub Runner user
         run: |
           docker run --rm --user root -v ${{ github.workspace }}:/workspace systic-alpine \
             /bin/bash -c "chmod +x ./build.sh && ./build.sh Testing && chown -R 1001:1001 /workspace"
 
-      - name: Upload Verification Pipeline Reports (Hard Truth)
+      - name: Upload Artifacts (Internal CI)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -31,3 +34,14 @@ jobs:
           path: |
             test_results.xml
             bench_results.json
+
+      - name: Attach Hard Truth Reports to Release
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          files: |
+            test_results.xml
+            bench_results.json
+          body: "Verification and performance transparency reports for this release."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

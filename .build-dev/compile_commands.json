@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/workspace/.build-dev",
+  "command": "/usr/bin/clang++ -I/workspace/include -g -O0 -DSYSTIC_DEV_MODE -g -std=c++23 -o CMakeFiles/systic_core.dir/src/core.cpp.o -c /workspace/src/core.cpp",
+  "file": "/workspace/src/core.cpp",
+  "output": "/workspace/.build-dev/CMakeFiles/systic_core.dir/src/core.cpp.o"
+},
+{
+  "directory": "/workspace/.build-dev",
+  "command": "/usr/bin/clang++ -I/workspace/include -isystem /root/.conan2/p/b/gtesta491738c12ccb/p/include -g -O0 -DSYSTIC_DEV_MODE -g -std=c++23 -o CMakeFiles/systic_tests.dir/tests/main_test.cpp.o -c /workspace/tests/main_test.cpp",
+  "file": "/workspace/tests/main_test.cpp",
+  "output": "/workspace/.build-dev/CMakeFiles/systic_tests.dir/tests/main_test.cpp.o"
+},
+{
+  "directory": "/workspace/.build-dev",
+  "command": "/usr/bin/clang++ -DBENCHMARK_STATIC_DEFINE -I/workspace/include -isystem /root/.conan2/p/b/bench3a3c78fe7fd24/p/include -g -O0 -DSYSTIC_DEV_MODE -g -std=c++23 -o CMakeFiles/systic_bench.dir/bench/main_bench.cpp.o -c /workspace/bench/main_bench.cpp",
+  "file": "/workspace/bench/main_bench.cpp",
+  "output": "/workspace/.build-dev/CMakeFiles/systic_bench.dir/bench/main_bench.cpp.o"
+}
+]
