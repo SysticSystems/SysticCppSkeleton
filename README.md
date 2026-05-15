@@ -4,7 +4,7 @@ A starting point for C++23 projects where build reproducibility and honest bench
 
 ---
 
-## What this is
+## What this is ?
 
 A template repository that wires up the build toolchain, test framework, and benchmark harness so you don't have to. It gives you a working project structure, a containerised build pipeline, and a CI workflow that publishes real test and benchmark results — nothing more.
 
@@ -64,12 +64,30 @@ The GitHub Actions workflow runs on a **bare-metal self-hosted runner**. This is
 > If you fork this and use GitHub-hosted runners, benchmark numbers will not be comparable across runs. Use them only as smoke tests until you wire up a bare-metal runner of your own.
 
 ---
+# Getting Started
 
-## Things not covered (you may want to add)
+## System Requirements
 
-- **License** — none is declared. Add one before making the repo public.
-- **Conan profile for your hardware** — the profile in `.conan/profiles/` targets a specific arch. Copy and adapt it before building on a different machine.
-- **Sanitiser builds** — no ASan/UBSan/TSan targets exist yet. Worth adding as a fourth build mode.
-- **Static analysis** — no `clang-tidy` or `clang-format` config is included.
-- **How to rename the project** — after cloning, you need to update `conanfile.py` (`name`, `version`), `CMakeLists.txt`, and `.env`. A short sed one-liner or rename script here would save time.
-- **Minimum host requirements** — Docker version, available disk space for the Alpine image and build cache.
+- **Docker** (any recent version with BuildKit support)
+- **~2 GB free disk space** for the Alpine Edge image and Conan/build cache
+
+## Setup
+
+1. Copy the environment file and fill in your values:
+   ```sh
+   cp .example.env .env
+   ```
+
+2. Edit `conanfile.py` — at minimum update the `name` and `version` fields to match your project.
+
+3. Review or replace the Conan profile under `.conan/profiles/`. The default targets a specific arch and compiler path — adjust it to match your machine. If you add a new profile file, update `build.sh` accordingly so it picks up the right profile name.
+
+## Run
+
+```sh
+./run-build.sh Dev        # build + compile-db for IDE indexing
+./run-build.sh Testing    # build, run tests and benchmarks
+./run-build.sh Release    # optimised build
+```
+
+Artifacts are mapped back to your host by the script on completion.

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Project Systic - Solid OCI-Native Build Logic
+# Project - OCI-Native Build Logic
 # ============================================================================
 
 set -e
@@ -60,7 +60,7 @@ log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 
 log_step "Initializing Build Environment"
 
-# --- SOVEREIGN COMPILER DISCOVERY ---
+# --- COMPILER DISCOVERY ---
 if [ -z "$CC" ] || [ -z "$CXX" ]; then
     # Always resolve to absolute paths to prevent CMake "not found" errors
     RAW_CXX=$(command -v clang++-21 || command -v clang++-19 || command -v clang++)
@@ -73,7 +73,7 @@ if [ -z "$CC" ] || [ -z "$CXX" ]; then
     fi
 fi
 
-# --- CLEANUP & HARDENING ---
+# --- CLEANUP ---
 if [ -f "$OUT_DIR/CMakeCache.txt" ]; then
     # Wipe cache if it points to a different compiler or phase
     CACHED_CXX=$(grep "CMAKE_CXX_COMPILER:FILEPATH" "$OUT_DIR/CMakeCache.txt" | cut -d'=' -f2 || true)
@@ -121,9 +121,9 @@ cmake -G "Ninja" -S . -B "$OUT_DIR" \
 log_info "Step 4: Compiling"
 cmake --build "$OUT_DIR" -j$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN)
 
-# --- EXECUTION & ARTIFACT HANDSHAKE ---
+# --- EXECUTION & ARTIFACTS ---
 if [[ "$PHASE" == "Testing" || "$PHASE" == "Dev" ]]; then
-    log_step "Step 5: Execution & Artifact Handshake"
+    log_step "Step 5: Execution & Artifact"
 
     # Define artifact paths relative to workspace root
     ROOT_DIR=$(pwd)
