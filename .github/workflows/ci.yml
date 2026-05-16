@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  sovereign-build:
+  build:
     name: Build & Extract Artifacts
     runs-on: ubuntu-latest
 
