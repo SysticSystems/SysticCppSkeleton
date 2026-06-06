@@ -49,8 +49,16 @@ case "$PHASE" in
         CMAKE_MODE="Debug"
         EXTRA_FLAGS="-g -O0 -DSYSTIC_DEV_MODE"
         ;;
+    "Fix")
+        # Auto-fix clang-tidy violations in-place.
+        # Requires compile_commands.json — run Dev first if missing.
+        OUT_DIR=".build-dev"
+        CMAKE_MODE="Debug"
+        EXTRA_FLAGS="-g -O0 -DSYSTIC_DEV_MODE"
+        ;;
+
     *)
-        echo -e "${RED}❌ Unknown phase: $PHASE. Use Debug, Dev, Testing, or Release.${NC}"
+        echo -e "${RED}❌ Unknown phase: $PHASE. Use Debug, Dev, Testing, Fix, or Release.${NC}"
         exit 1
         ;;
 esac
@@ -122,31 +130,133 @@ log_info "Step 4: Compiling"
 cmake --build "$OUT_DIR" -j$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN)
 
 # --- EXECUTION & ARTIFACTS ---
+# Method to run test
+run_tests() {
+    # 1. Run the binary cleanly
+    "$TEST_BIN" --gtest_output="xml:$ROOT_DIR/test_results.xml"
+
+    # 2. CAPTURE IMMEDIATELY (Crucial: $? changes after every single command)
+    local test_exit_code=$?
+
+    # 3. Use the return value multiple times safely
+    if [ $test_exit_code -ne 0 ]; then
+        echo -e "${RED}[!] Tests failed with exit code: $test_exit_code${NC}"
+    else
+        echo -e "${GREEN}[PASS] Tests completed successfully.${NC}"
+    fi
+
+    # 4. Return it from the function so the outer script can capture it too
+    return $test_exit_code
+}
+
+# Method that executes the benchmarks tests.
+run_benchmarks() {
+  # 1. Run the binary cleanly
+      "$BENCH_BIN" --benchmark_out="$ROOT_DIR/bench_results.json" --benchmark_out_format=json
+
+      # 2. CAPTURE IMMEDIATELY (Crucial: $? changes after every single command)
+      local test_exit_code=$?
+
+      # 3. Use the return value multiple times safely
+      if [ $test_exit_code -ne 0 ]; then
+          echo -e "${RED}[!] Benchmarks failed with exit code: $test_exit_code${NC}"
+      else
+          echo -e "${GREEN}[PASS] Benchmarks completed successfully.${NC}"
+      fi
+
+      # 4. Return it from the function so the outer script can capture it too
+      return $test_exit_code
+}
+
 if [[ "$PHASE" == "Testing" || "$PHASE" == "Dev" ]]; then
     log_step "Step 5: Execution & Artifact"
 
     # Define artifact paths relative to workspace root
     ROOT_DIR=$(pwd)
-    
+
     # Search for specific binaries
     TEST_BIN=$(find "$OUT_DIR" -name "*tests" -type f -executable | head -n 1)
     BENCH_BIN=$(find "$OUT_DIR" -name "*bench" -type f -executable | head -n 1)
 
     if [ -n "$TEST_BIN" ]; then
         log_info "Running Tests: $TEST_BIN"
-        # Outputting directly to the mapped host volume
-        "$TEST_BIN" --gtest_output="xml:$ROOT_DIR/test_results.xml" || echo -e "${RED}[!] Tests failed${NC}"
+        run_tests
+        PIPELINE_TEST_STATUS=$?
     fi
 
     if [ -n "$BENCH_BIN" ]; then
         log_info "Running Benchmarks: $BENCH_BIN"
         # Outputting directly to the mapped host volume
-        "$BENCH_BIN" --benchmark_out="$ROOT_DIR/bench_results.json" --benchmark_out_format=json || echo -e "${RED}[!] Benchmarks failed${NC}"
+        run_benchmarks
+        PIPELINE_BENCH_STATUS=$?
     fi
 
     # Verification log for the developer
     echo -e "\n${CYAN}--- Artifact Handshake ---${NC}"
-    [ -f "$ROOT_DIR/test_results.xml" ] && echo -e "  ${GREEN}[PASS]${NC} test_results.xml -> Host" || echo -e "  ${RED}[FAIL]${NC} No test report found."
-    [ -f "$ROOT_DIR/bench_results.json" ] && echo -e "  ${GREEN}[PASS]${NC} bench_results.json -> Host" || echo -e "  ${RED}[FAIL]${NC} No bench report found."
+    if [ -n "$PIPELINE_TEST_STATUS" ]; then
+          [ -f "$ROOT_DIR/test_results.xml" ] && echo -e "  ${GREEN}[PASS]${NC} test_results.xml -> Host" || echo -e "  ${RED}[FAIL]${NC} No test report found."
+    fi
+
+    if [ -n "$PIPELINE_BENCH_STATUS" ]; then
+      [ -f "$ROOT_DIR/bench_results.json" ] && echo -e "  ${GREEN}[PASS]${NC} bench_results.json -> Host" || echo -e "  ${RED}[FAIL]${NC} No bench report found."
+    fi
+
 fi
+# ---------------------------------------------------------------
+# Fix Phase — clang-tidy auto-remediation
+# Requires compile_commands.json produced by a prior Dev build.
+# Run: ./build.sh Fix
+# ---------------------------------------------------------------
+if [[ "$PHASE" == "Fix" ]]; then
+    COMPILE_DB="$OUT_DIR/compile_commands.json"
+
+    if [ ! -f "$COMPILE_DB" ]; then
+        echo -e "${RED}[ERROR] No compile_commands.json found at $COMPILE_DB${NC}"
+        echo -e "${BLUE}[INFO]${NC} Run './build.sh Dev' first to generate it."
+        exit 1
+    fi
+
+    # Discover clang-tidy (same priority order as CMake)
+    TIDY_EXE="clang-tidy"
+    if [ -z "$TIDY_EXE" ]; then
+        echo -e "${RED}[ERROR] clang-tidy not found in PATH.${NC}"; exit 1
+    fi
+
+    log_info "clang-tidy fix — using: $TIDY_EXE"
+    log_info "Compile DB : $COMPILE_DB"
+    log_info "Config     : .clang-tidy (project root)"
+
+    # Collect all project source files (exclude build dirs and deps)
+    SOURCES=$(find src include tests bench \
+        -name "*.cpp" -o -name "*.hpp" 2>/dev/null | sort)
+
+    if [ -z "$SOURCES" ]; then
+        echo -e "${RED}[ERROR] No source files found under src/ include/ tests/ bench/${NC}"
+        exit 1
+    fi
+
+    echo -e "${CYAN}--- Files to fix ---${NC}"
+    echo "$SOURCES" | while read -r f; do echo "  $f"; done
+
+    # --fix            : apply safe mechanical fixes (includes, modernize, etc.)
+    # --fix-errors     : also fix even when there are compile errors in the TU
+    # --format-style=file : run clang-format on fixed regions using .clang-format
+    echo -e "\n${MAGENTA}Running clang-tidy --fix ...${NC}"
+    # shellcheck disable=SC2086
+    "$TIDY_EXE" \
+        -p "$COMPILE_DB" \
+        --fix \
+        --fix-errors \
+        --format-style=file \
+        $SOURCES
+
+    FIX_EXIT=$?
+    if [ $FIX_EXIT -eq 0 ]; then
+        echo -e "\n${GREEN}${BOLD}✅ clang-tidy --fix completed. Review changes with: git diff${NC}"
+    else
+        echo -e "\n${RED}[WARN] clang-tidy exited with code $FIX_EXIT — some violations need manual fixes.${NC}"
+        echo -e "${BLUE}[INFO]${NC} Check remaining issues with: ./build.sh Dev"
+    fi
+fi
+
 echo -e "\n${GREEN}${BOLD}✅ $PROJECT_NAME [$PHASE] READY!${NC}"

@@ -41,12 +41,13 @@ if [ "$(docker ps -aq -f name=^/${CONTAINER_NAME}$)" ]; then
     docker rm -f "$CONTAINER_NAME" > /dev/null
 fi
 
-log_info "Launching Sovereign Build: $PROJECT_NAME [$PHASE]"
+log_info "Launching Build: $PROJECT_NAME [$PHASE]"
 
 # 3. Execution Handshake
 # Maps host to /workspace and ensures correct file ownership on host
 docker run --name "$CONTAINER_NAME" \
     -v "$(pwd):/workspace" \
+    -v "$(pwd)/.conan/cache/$PHASE:/root/.conan2" \
     -w /workspace \
     "$IMAGE_NAME" \
     ./build.sh "$PHASE"

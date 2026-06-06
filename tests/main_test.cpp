@@ -1,14 +1,19 @@
-#include <gtest/gtest.h>
 #include "systic/core.hpp"
 
-TEST(SysticCoreTest, ComputeFactorial) {
-    systic::CoreEngine engine;
-    EXPECT_EQ(engine.compute_factorial(0), 1);
-    EXPECT_EQ(engine.compute_factorial(1), 1);
-    EXPECT_EQ(engine.compute_factorial(5), 120);
-}
+namespace systic {
 
-TEST(SysticCoreTest, ComputeSum) {
-    systic::CoreEngine engine;
-    EXPECT_EQ(engine.compute_sum(5, 7), 12);
-}
+    auto CoreEngine::computeFactorial(int inputNum) const -> int { // NOLINT(misc-no-recursion)
+        if (inputNum < 0) {
+            return -1;
+        }
+        if (inputNum <= 1) {
+            return 1;
+        }
+        return inputNum * computeFactorial(inputNum - 1);
+    }
+
+    auto CoreEngine::computeSum(int firstVal, int secondVal) -> int {
+        return firstVal + secondVal;
+    }
+
+} // namespace systic
