@@ -2,13 +2,18 @@
 
 namespace systic {
 
-int CoreEngine::compute_factorial(int n) const {
-    if (n <= 1) return 1;
-    return n * compute_factorial(n - 1);
-}
+    auto CoreEngine::computeFactorial(int inputNum) const -> int { // NOLINT(misc-no-recursion)
+        if (inputNum < 0) {
+            return -1;
+        }
+        if (inputNum <= 1) {
+            return 1;
+        }
+        return inputNum * computeFactorial(inputNum - 1);
+    }
 
-int CoreEngine::compute_sum(int a, int b) const {
-    return a + b;
-}
+    auto CoreEngine::computeSum(int firstVal, int secondVal) -> int {
+        return firstVal + secondVal;
+    }
 
 } // namespace systic

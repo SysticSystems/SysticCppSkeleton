@@ -51,6 +51,7 @@ Docker is required. The `run-build.sh` script manages the container lifecycle an
 ./run-build.sh Dev        # build + compile-db for IDE indexing
 ./run-build.sh Testing    # build, run tests, run benchmarks
 ./run-build.sh Release    # optimised build
+./run-build.sh Fix        # auto-fix clang-tidy violations (requires Dev build first)
 ```
 
 If you want to build directly on the host, install Conan 2, CMake, Ninja, and Clang 21, then run `build.sh`.
@@ -88,6 +89,7 @@ The GitHub Actions workflow runs on a **bare-metal self-hosted runner**. This is
 ./run-build.sh Dev        # build + compile-db for IDE indexing
 ./run-build.sh Testing    # build, run tests and benchmarks
 ./run-build.sh Release    # optimised build
+./run-build.sh Fix        # auto-fix clang-tidy violations (requires Dev build first)
 ```
 
 Artifacts are mapped back to your host by the script on completion.

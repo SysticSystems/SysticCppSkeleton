@@ -23,3 +23,6 @@ cmake-build-*/
 *.so
 *.dylib
 *.exe
+
+# Conan pulled deps
+.conan/cache
