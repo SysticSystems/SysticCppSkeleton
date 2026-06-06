@@ -1,0 +1,99 @@
+# =============================================================================
+# Systic Hard Truths Protocol — .clang-format
+# Enforced on every project inheriting the Systic skeleton.
+# =============================================================================
+
+Language: Cpp
+Standard: c++23
+
+# --- Base style then override everything explicitly ---
+BasedOnStyle: LLVM
+
+# ===========================================================================
+# INDENTATION
+# ===========================================================================
+IndentWidth: 4
+TabWidth: 4
+UseTab: ForIndentation               # real TAB characters for indentation
+
+# Access specifiers (public/private/protected) sit at class level (0 offset),
+# and everything under them is indented 1 tab relative to the specifier.
+AccessModifierOffset: 0              # public:/private:/protected: flush with class body
+IndentAccessModifiers: false         # the specifier itself is NOT indented
+IndentCaseLabels: true
+
+# ===========================================================================
+# BRACE STYLE — Opening brace ALWAYS on same line (K&R / Java style)
+# ===========================================================================
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass:            false       # class Foo {
+  AfterControlStatement: Never       # if (...) {
+  AfterEnum:             false       # enum Foo {
+  AfterFunction:         false       # void myFun() {
+  AfterNamespace:        false       # namespace foo {
+  AfterStruct:           false       # struct Foo {
+  AfterUnion:            false
+  AfterExternBlock:      false
+  BeforeCatch:           false       # } catch {
+  BeforeElse:            false       # } else {
+  BeforeWhile:           false
+  IndentBraces:          false
+  SplitEmptyFunction:    false       # empty body stays on one line
+  SplitEmptyRecord:      false
+  SplitEmptyNamespace:   false
+
+# ===========================================================================
+# TEMPLATE DECLARATIONS — Each parameter on its own line
+# ===========================================================================
+AlwaysBreakTemplateDeclarations: Yes
+BinPackParameters: false             # each param on its own line when breaking
+BinPackArguments:  false
+
+# Force one parameter per line when they don't fit on one line:
+# template <
+#     typename KeyType,
+#     typename ValueType,
+#     int      BufferCapacity>
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# ===========================================================================
+# LINE LENGTH & BREAKS
+# ===========================================================================
+ColumnLimit: 100
+ReflowComments: true
+BreakBeforeBinaryOperators: NonAssignment
+
+# ===========================================================================
+# SPACES
+# ===========================================================================
+SpaceBeforeParens: ControlStatements  # if (...) but not myFun(...)
+SpaceAfterTemplateKeyword: false
+SpacesInAngles: false
+SpaceInEmptyBlock: false
+SpaceBeforeCpp11BracedList: false
+
+# ===========================================================================
+# INCLUDES — grouped and sorted
+# ===========================================================================
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # 1. The file's own header (matched by regex — adjust to your module names)
+  - Regex:           "^\"systic/"
+    Priority:        1
+  # 2. Project headers
+  - Regex:           "^\".*\""
+    Priority:        2
+  # 3. System / third-party
+  - Regex:           "^<.*>"
+    Priority:        3
+
+# ===========================================================================
+# MISC
+# ===========================================================================
+Cpp11BracedListStyle: true
+FixNamespaceComments: true           # adds // namespace foo at closing brace
+MaxEmptyLinesToKeep: 1
+PointerAlignment: Left               # int* ptr not int *ptr
+ReferenceAlignment: Left             # int& ref not int &ref

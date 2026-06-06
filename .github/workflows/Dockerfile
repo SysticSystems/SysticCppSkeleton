@@ -16,7 +16,8 @@ RUN apk update && apk add --no-cache \
 RUN ln -sf /usr/bin/clang-21 /usr/bin/clang && \
     ln -sf /usr/bin/clang++-21 /usr/bin/clang++ && \
     ln -sf /usr/bin/clang-21 /usr/bin/cc && \
-    ln -sf /usr/bin/clang++-21 /usr/bin/c++
+    ln -sf /usr/bin/clang++-21 /usr/bin/c++ \
+    ln -sf /usr/lib/llvm21/bin/clang-tidy /usr/bin/clang-tidy
 
 # Isolated Conan & Modern Ninja setup
 # Installing ninja via pipx guarantees version 1.11.x or 1.12.x
@@ -29,6 +30,8 @@ ENV PATH="/root/.local/bin:${PATH}"
 ENV CC=clang
 ENV CXX=clang++
 
+# Init the folder where Conan 2 pulled deps lives.
+RUN mkdir /root/.conan2
 WORKDIR /workspace
 
 CMD ["/bin/bash", "-c", "./build.sh Testing"]

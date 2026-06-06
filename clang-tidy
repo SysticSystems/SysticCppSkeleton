@@ -1,0 +1,141 @@
+# =============================================================================
+# Systic Hard Truths Protocol — .clang-tidy
+# Enforced on every project inheriting the Systic skeleton.
+# Violations are errors, not warnings. There is no opt-out.
+# =============================================================================
+
+Checks: >
+  -*,
+  readability-identifier-naming,
+  readability-identifier-length,
+  readability-named-parameter,
+  readability-inconsistent-declaration-parameter-name,
+  modernize-use-override,
+  modernize-use-nullptr,
+  modernize-use-using,
+  modernize-loop-convert,
+  cppcoreguidelines-explicit-virtual-functions,
+  cppcoreguidelines-pro-type-member-init,
+  bugprone-use-after-move,
+  bugprone-unchecked-optional-access,
+  performance-unnecessary-copy-initialization,
+  performance-move-const-arg
+
+WarningsAsErrors: "*"
+
+HeaderFilterRegex: "(include|src)/.*"
+
+CheckOptions:
+
+  # ===========================================================================
+  # NAMING PROTOCOL — Systic Standard
+  # ===========================================================================
+
+  # --- Classes & Structs: PascalCase ---
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+
+  # --- Methods / Functions: camelCase ---
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.MethodCase
+    value: camelBack
+
+  # --- Variables & Parameters: camelCase ---
+  - key: readability-identifier-naming.VariableCase
+    value: camelBack
+  - key: readability-identifier-naming.ParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.LocalVariableCase
+    value: camelBack
+
+  # --- Member variables: camelCase ---
+  - key: readability-identifier-naming.MemberCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: camelBack
+  - key: readability-identifier-naming.PublicMemberCase
+    value: camelBack
+  - key: readability-identifier-naming.ProtectedMemberCase
+    value: camelBack
+
+  # --- Template Parameters: UPPER_CASE, minimum 4 chars, no prefix ---
+  # Distinguished from constants by the absence of K_ prefix.
+  # Write: ELEMENT_TYPE, KEY_TYPE, VALUE_TYPE, BUFFER_SIZE, etc.
+  - key: readability-identifier-naming.TemplateParameterCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.TemplateParameterMinimumLength
+    value: "4"
+  - key: readability-identifier-naming.TemplateTemplateParameterCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.TemplateTemplateParameterMinimumLength
+    value: "4"
+  - key: readability-identifier-naming.TypeTemplateParameterCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.TypeTemplateParameterMinimumLength
+    value: "4"
+  - key: readability-identifier-naming.ValueTemplateParameterCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ValueTemplateParameterMinimumLength
+    value: "4"
+
+  # --- Namespaces: lower_case ---
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+
+  # --- Enums: PascalCase + mandatory 'Enum' suffix ---
+  # MemoryLayoutEnum, ConnectionStateEnum, RetryPolicyEnum
+  # Values: pure UPPER_CASE — enum scope already provides full context.
+  #         MemoryLayoutEnum::LINEAR_CONTIGUOUS needs no K_ prefix.
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumSuffix
+    value: Enum
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+
+  # --- Constants & Constexpr: K_ prefix + UPPER_CASE ---
+  # K_ = "baked-in compile-time value". No K_ = template type hole.
+  # K_MAX_BUFFER_SIZE, K_DEFAULT_CAPACITY, K_MAX_RETRY_COUNT
+  - key: readability-identifier-naming.ConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ConstantPrefix
+    value: K_
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ConstexprVariablePrefix
+    value: K_
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.GlobalConstantPrefix
+    value: K_
+  - key: readability-identifier-naming.StaticConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.StaticConstantPrefix
+    value: K_
+
+  # --- Type aliases: PascalCase ---
+  - key: readability-identifier-naming.TypeAliasCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypedefCase
+    value: CamelCase
+
+  # ===========================================================================
+  # MINIMUM LENGTH — No single-letter identifiers anywhere that matter
+  # ===========================================================================
+  - key: readability-identifier-length.MinimumVariableNameLength
+    value: "3"
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: "3"
+  - key: readability-identifier-length.MinimumLoopCounterNameLength
+    value: "3"                              # kills i, j, k in loops
+  - key: readability-identifier-length.IgnoredLoopCounterNames
+    value: ""                               # no exceptions granted
+
+  # ===========================================================================
+  # PARAMETER NAMING — All parameters must be named (no anonymous params)
+  # ===========================================================================
+  - key: readability-named-parameter.IgnoredRegexp
+    value: ""
