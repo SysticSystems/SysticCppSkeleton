@@ -46,6 +46,7 @@ log_info "Launching Build: $PROJECT_NAME [$PHASE]"
 # 3. Execution Handshake
 # Maps host to /workspace and ensures correct file ownership on host
 docker run --name "$CONTAINER_NAME" \
+    --network host \
     -v "$(pwd):/workspace" \
     -v "$(pwd)/.conan/cache/$PHASE:/root/.conan2" \
     -w /workspace \

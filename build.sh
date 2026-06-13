@@ -15,6 +15,14 @@ PROJECT_NAME=${PROJECT_NAME:-"systic"}
 DEFAULT_PHASE=${DEFAULT_PHASE:-"Release"}
 CONAN_PROFILE=${CONAN_PROFILE:-"clang21"}
 
+# Conan Server Registry Fallbacks
+CONAN_REMOTE_NAME=${CONAN_REMOTE_NAME:-"laptop_server"}
+CONAN_REMOTE_URL=${CONAN_REMOTE_URL:-"http://172.17.0.1:9300"}
+CONAN_LOGIN_USER=${CONAN_LOGIN_USER:-"systic_user"}
+CONAN_LOGIN_PASSWORD=${CONAN_LOGIN_PASSWORD:-"sovereign_pass"}
+CONAN_PACKAGE_USER=${CONAN_PACKAGE_USER:-"systic"}
+CONAN_PACKAGE_CHANNEL=${CONAN_PACKAGE_CHANNEL:-"stable"}
+
 # 1. Parse Phase
 PHASE=$(echo "${1:-$DEFAULT_PHASE}" | awk '{print toupper(substr($0,1,1))tolower(substr($0,2))}')
 
@@ -56,9 +64,15 @@ case "$PHASE" in
         CMAKE_MODE="Debug"
         EXTRA_FLAGS="-g -O0 -DSYSTIC_DEV_MODE"
         ;;
+    "Publish")
+        # Registry Deployment Phase
+        OUT_DIR=".build"
+        CMAKE_MODE="Release"
+        EXTRA_FLAGS="-O3 -DNDEBUG"
+        ;;
 
     *)
-        echo -e "${RED}❌ Unknown phase: $PHASE. Use Debug, Dev, Testing, Fix, or Release.${NC}"
+        echo -e "${RED}❌ Unknown phase: $PHASE. Use Debug, Dev, Testing, Fix, Release, or Publish.${NC}"
         exit 1
         ;;
 esac
@@ -238,9 +252,6 @@ if [[ "$PHASE" == "Fix" ]]; then
     echo -e "${CYAN}--- Files to fix ---${NC}"
     echo "$SOURCES" | while read -r f; do echo "  $f"; done
 
-    # --fix            : apply safe mechanical fixes (includes, modernize, etc.)
-    # --fix-errors     : also fix even when there are compile errors in the TU
-    # --format-style=file : run clang-format on fixed regions using .clang-format
     echo -e "\n${MAGENTA}Running clang-tidy --fix ...${NC}"
     # shellcheck disable=SC2086
     "$TIDY_EXE" \
@@ -257,6 +268,52 @@ if [[ "$PHASE" == "Fix" ]]; then
         echo -e "\n${RED}[WARN] clang-tidy exited with code $FIX_EXIT — some violations need manual fixes.${NC}"
         echo -e "${BLUE}[INFO]${NC} Check remaining issues with: ./build.sh Dev"
     fi
+fi
+
+# ---------------------------------------------------------------
+# Publish Phase — Registry Deployment Logic
+# Run: ./build.sh Publish
+# ---------------------------------------------------------------
+if [[ "$PHASE" == "Publish" ]]; then
+    log_step "Step 5: Publishing Release Package"
+
+    # 1. Parse project version dynamically out of conanfile.py
+    if [ -f "conanfile.py" ]; then
+        PKG_VERSION=$(grep -E "version\s*=\s*[\"']" conanfile.py | sed -E "s/version\s*=\s*[\"']([^\"']+)[\"']/\1/" | xargs)
+        PKG_NAME=$(grep -E "name\s*=\s*[\"']" conanfile.py | sed -E "s/name\s*=\s*[\"']([^\"']+)[\"']/\1/" | xargs)
+    fi
+
+    # Fallbacks if regex extraction hits structural issues
+    PKG_NAME=${PKG_NAME:-"arrayslotthreadsafe"}
+    PKG_VERSION=${PKG_VERSION:-"0.1.1"}
+
+    log_info "Target Reference Identified: ${PKG_NAME}/${PKG_VERSION}@${CONAN_PACKAGE_USER}/${CONAN_PACKAGE_CHANNEL}"
+    log_info "Remote Server Registry End: ${CONAN_REMOTE_URL}"
+
+    # 2. Local Conan Create Execution to ensure the recipe/binary artifact is in cache
+    log_info "Enforcing local recipe cache packaging..."
+    conan create . \
+        --user="${CONAN_PACKAGE_USER}" \
+        --channel="${CONAN_PACKAGE_CHANNEL}" \
+        -pr:b="./.conan/profiles/$CONAN_PROFILE" \
+        -pr:h="./.conan/profiles/$CONAN_PROFILE" \
+        -s build_type="Release" --build=missing
+
+    # 3. Dynamic Remote Registration
+    log_info "Configuring remote registry mapping..."
+    conan remote add "${CONAN_REMOTE_NAME}" "${CONAN_REMOTE_URL}" --force
+
+    # 4. Authentication Check
+    log_info "Authenticating to remote storage..."
+    conan remote login "${CONAN_REMOTE_NAME}" "${CONAN_LOGIN_USER}" -p "${CONAN_LOGIN_PASSWORD}"
+
+    # 5. Build Package Reference String and Push Upstream
+    FULL_PACKAGE_REF="${PKG_NAME}/${PKG_VERSION}@${CONAN_PACKAGE_USER}/${CONAN_PACKAGE_CHANNEL}"
+    
+    log_info "Uploading fully compiled packages & recipe to server..."
+    conan upload "${FULL_PACKAGE_REF}" --remote="${CONAN_REMOTE_NAME}" --confirm
+
+    echo -e "\n${GREEN}${BOLD}🚀 Package successfully published to upstream server registry!${NC}"
 fi
 
 echo -e "\n${GREEN}${BOLD}✅ $PROJECT_NAME [$PHASE] READY!${NC}"
